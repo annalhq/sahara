@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,16 +12,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Users,
-  Building,
-  Calendar,
-  Search,
-  Filter,
-} from "lucide-react";
+import { Users, Building, Calendar, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 export default function NGODashboard() {
+  const router = useRouter();
   const [patients] = useState([
     {
       id: 1,
@@ -50,7 +46,11 @@ export default function NGODashboard() {
     <div className="container py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">NGO Dashboard</h1>
-        <Button variant="outline" className="gap-2">
+        <Button
+          variant="outline"
+          className="gap-2"
+          onClick={() => router.push("/ngo/update-capacity")}
+        >
           <Building className="h-4 w-4" />
           Update Capacity
         </Button>
