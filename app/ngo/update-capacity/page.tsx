@@ -1,7 +1,6 @@
-/* eslint-disable */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, Building } from "lucide-react";
+import { getNGOById, type NGO } from "@/lib/database";
 
 export default function UpdateCapacity() {
   const router = useRouter();
+  const [ngo, setNGO] = useState<NGO | null>(null);
   const [formData, setFormData] = useState({
     currentCapacity: 75,
     totalBeds: 120,
@@ -20,7 +21,29 @@ export default function UpdateCapacity() {
     notes: "",
   });
 
-  const handleChange = (e) => {
+  // Mock NGO ID for demo purposes
+  const mockNGOId = "n001";
+
+  useEffect(() => {
+    // Load NGO data
+    const currentNGO = getNGOById(mockNGOId);
+    if (currentNGO) {
+      setNGO(currentNGO);
+      setFormData({
+        currentCapacity: currentNGO.current_capacity,
+        totalBeds: currentNGO.total_capacity,
+        availableBeds: Math.round(
+          currentNGO.total_capacity * (1 - currentNGO.current_capacity / 100)
+        ),
+        expectedNewBeds: 0,
+        notes: "",
+      });
+    }
+  }, []);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -28,9 +51,9 @@ export default function UpdateCapacity() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real application, you would submit this data to your API
+    // In a real application, you would update the JSON or database
     console.log("Submitting capacity update:", formData);
 
     // Show success message and redirect back

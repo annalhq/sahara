@@ -1,0 +1,44 @@
+[
+  {
+    "id": "n001",
+    "name": "Sahara Foundation",
+    "address": "78 Civic Center, Bangalore, Karnataka",
+    "contact_number": "080-87654321",
+    "email": "contact@saharafoundation.org",
+    "license_number": "KA-NGO-4567",
+    "total_capacity": 120,
+    "current_capacity": 75,
+    "service_areas": ["Rehabilitation", "Job Training", "Social Integration"],
+    "verified": true,
+    "total_patients_housed": 89,
+    "upcoming_intakes": 8
+  },
+  {
+    "id": "n002",
+    "name": "Disha Rehabilitation Trust",
+    "address": "34 Civil Lines, New Delhi",
+    "contact_number": "011-76543210",
+    "email": "info@dishatrust.org",
+    "license_number": "DL-NGO-8901",
+    "total_capacity": 85,
+    "current_capacity": 62,
+    "service_areas": ["Vocational Training", "Community Integration", "Medical Support"],
+    "verified": true,
+    "total_patients_housed": 62,
+    "upcoming_intakes": 5
+  },
+  {
+    "id": "n003",
+    "name": "Navjeevan Care Center",
+    "address": "56 Malviya Nagar, Jaipur, Rajasthan",
+    "contact_number": "0141-2345678",
+    "email": "contact@navjeevancare.org",
+    "license_number": "RJ-NGO-5678",
+    "total_capacity": 75,
+    "current_capacity": 80,
+    "service_areas": ["Rehabilitation", "Counseling", "Life Skills"],
+    "verified": true,
+    "total_patients_housed": 68,
+    "upcoming_intakes": 6
+  }
+]
