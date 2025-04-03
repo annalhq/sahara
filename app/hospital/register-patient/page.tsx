@@ -1,3 +1,5 @@
+"use client";
+
 import { PatientRegistrationForm } from "@/components/PatientRegistrationForm";
 
 export default function RegisterPatientPage() {
