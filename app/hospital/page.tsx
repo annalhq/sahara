@@ -36,7 +36,7 @@ export default function HospitalDashboard() {
     <div className="container py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Hospital Dashboard</h1>
-        <Link href="/hospital/register-patient">
+        <Link href="./hospital/register-patient" className="inline-flex items-center">
           <Button className="gap-2">
             <UserPlus className="h-4 w-4" />
             Register New Patient
