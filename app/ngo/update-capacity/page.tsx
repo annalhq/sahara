@@ -26,19 +26,20 @@ export default function UpdateCapacity() {
 
   useEffect(() => {
     // Load NGO data
-    const currentNGO = getNGOById(mockNGOId);
-    if (currentNGO) {
-      setNGO(currentNGO);
-      setFormData({
-        currentCapacity: currentNGO.current_capacity,
-        totalBeds: currentNGO.total_capacity,
-        availableBeds: Math.round(
-          currentNGO.total_capacity * (1 - currentNGO.current_capacity / 100)
-        ),
-        expectedNewBeds: 0,
-        notes: "",
-      });
-    }
+    getNGOById(mockNGOId).then((currentNGO) => {
+      if (currentNGO) {
+        setNGO(currentNGO);
+        setFormData({
+          currentCapacity: currentNGO.current_capacity,
+          totalBeds: currentNGO.total_capacity,
+          availableBeds: Math.round(
+            currentNGO.total_capacity * (1 - currentNGO.current_capacity / 100)
+          ),
+          expectedNewBeds: 0,
+          notes: "",
+        });
+      }
+    });
   }, []);
 
   const handleChange = (
