@@ -48,7 +48,7 @@ export function PatientRegistrationForm() {
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm({
+  } = useForm<z.infer<typeof patientSchema>>({
     resolver: zodResolver(patientSchema),
     defaultValues: {
       consent_given: false,
