@@ -7,8 +7,8 @@ import { SiteHeader } from "@/components/site-header";
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'ShelterConnect - Bridging Healthcare & Hope',
-  description: 'Connecting hospitals with NGOs for rehabilitating leprosy patients',
+  title: 'Sahara',
+  description: 'Hope for the Homeless',
 };
 
 export default function RootLayout({
