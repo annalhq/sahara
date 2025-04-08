@@ -92,7 +92,7 @@ export default function NGODashboard() {
           if (acceptedError) throw acceptedError;
 
           const formattedAccepted =
-            acceptedData?.map((item) => item.patients) || [];
+            acceptedData?.map((item) => item.patients).flat() || [];
           setAcceptedPatients(formattedAccepted);
 
           setStats({
@@ -363,12 +363,17 @@ export default function NGODashboard() {
             <h2 className="text-xl font-semibold">Accepted Patients</h2>
           </div>
 
-          <DataTable
-            columns={acceptedColumns}
-            data={filteredAcceptedPatients}
-            isLoading={isLoading}
-            emptyMessage="No patients have been accepted yet."
-          />
+          {filteredAcceptedPatients.length === 0 && !isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No patients have been accepted yet.
+            </div>
+          ) : (
+            <DataTable
+              columns={acceptedColumns}
+              data={filteredAcceptedPatients}
+              isLoading={isLoading}
+            />
+          )}
         </div>
       </Card>
     </div>
