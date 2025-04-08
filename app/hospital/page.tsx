@@ -39,6 +39,24 @@ export default function HospitalDashboard() {
   });
   const { session, loading, isAuthenticated } = useAuth("/auth/login");
 
+  // Format date function to convert ISO string to YYYY-MM-DD HH:MM:SS
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "-";
+
+    const date = new Date(dateString);
+
+    // Format as YYYY-MM-DD HH:MM:SS
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(date.getUTCDate()).padStart(2, "0");
+    const hours = String(date.getUTCHours()).padStart(2, "0");
+    const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+    const seconds = String(date.getUTCSeconds()).padStart(2, "0");
+
+    // return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    return `${day}-${month}-${year}`;
+  };
+
   useEffect(() => {
     if (loading) return; // Don't fetch data while checking authentication
     if (!isAuthenticated) return; // Don't proceed if not authenticated
@@ -119,27 +137,22 @@ export default function HospitalDashboard() {
     };
   }, [loading, isAuthenticated, session]);
 
+  // Process data with formatted dates before passing to DataTable
+  const processedPatients = patients.map((patient) => ({
+    ...patient,
+    date_of_birth: formatDate(patient.date_of_birth),
+    created_at: formatDate(patient.created_at),
+  }));
+
   const columns = [
     { key: "first_name", label: "First Name" },
     { key: "last_name", label: "Last Name" },
-    {
-      key: "date_of_birth",
-      label: "Age",
-      render: (row: any) => {
-        const age =
-          new Date().getFullYear() - new Date(row.date_of_birth).getFullYear();
-        return `${age} years`;
-      },
-    },
+    { key: "date_of_birth", label: "Date of Birth" },
     { key: "status", label: "Status" },
-    {
-      key: "created_at",
-      label: "Registration Date",
-      render: (row: any) => new Date(row.created_at).toLocaleDateString(),
-    },
+    { key: "created_at", label: "Registration Date" },
   ];
 
-  const filteredPatients = patients.filter((patient: any) =>
+  const filteredPatients = processedPatients.filter((patient: any) =>
     `${patient.first_name} ${patient.last_name}`
       .toLowerCase()
       .includes(searchQuery.toLowerCase())

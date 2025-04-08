@@ -57,34 +57,71 @@ export default function NGODashboard() {
 
   const handleAcceptPatient = async (patientId: string) => {
     try {
-      if (!session) throw new Error("No session found");
+      // Add a more specific check for session.user and session.user.id
+      if (!session || !session.user || !session.user.id) {
+        toast.error(
+          "User session is invalid or incomplete. Please try logging in again."
+        );
+        console.error(
+          "Attempted to accept patient with invalid session:",
+          session
+        );
+        return; // Stop execution if session is invalid
+      }
 
-      // Create assignment
+      // Now it's safer to access session.user.id
+      const ngoUserId = session.user.id;
+
+      // 1. Create assignment
       const { error: assignmentError } = await supabase
         .from("ngo_assignments")
         .insert({
           patient_id: patientId,
-          ngo_id: session.user.id,
-          status: "accepted",
+          ngo_id: ngoUserId, // Use the validated user ID
+          status: "accepted", // Or 'assigned' depending on your desired flow
         });
 
-      if (assignmentError) throw assignmentError;
+      if (assignmentError) {
+        console.error("Error creating assignment:", assignmentError);
+        throw new Error(
+          `Failed to create assignment: ${assignmentError.message}`
+        );
+      }
 
-      // Update patient status
-      const { error: updateError } = await supabase
+      // 2. Update patient status from pending to assigned
+      const { data, error: updateError } = await supabase
         .from("patients")
         .update({ status: "assigned" })
-        .eq("id", patientId);
+        .eq("id", patientId)
+        .eq("status", "pending") // Ensure we're only updating patients with pending status
+        .select();
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Error updating patient status:", updateError);
+        throw new Error(
+          `Failed to update patient status: ${updateError.message}`
+        );
+      }
+
+      // Verify the status was updated by checking if any rows were affected
+      if (!data || data.length === 0) {
+        console.error("No patient was updated, may have already been assigned");
+        throw new Error(
+          "Patient could not be updated. It may have already been assigned."
+        );
+      }
 
       toast.success("Patient accepted successfully");
 
-      // Remove patient from list
-      setPatients(patients.filter((p: any) => p.id !== patientId));
-    } catch (error) {
+      setPatients((currentPatients: any) =>
+        currentPatients.filter((p: any) => p.id !== patientId)
+      );
+    } catch (error: any) {
       console.error("Error accepting patient:", error);
-      toast.error("Failed to accept patient");
+      toast.error(
+        error.message ||
+          "An unexpected error occurred while accepting the patient."
+      );
     }
   };
 
