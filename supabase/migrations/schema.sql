@@ -1,83 +1,89 @@
 /*
-  # Simplified Healthcare Management System Schema
+  # Healthcare Patient Management System Schema
+
+  This schema defines the structure for managing patients and NGO assignments.
+
+  1. New Tables
+    - patients
+      - Basic patient information
+      - Medical history
+      - Assignment status
+    - ngo_assignments
+      - Tracks NGO assignments for patients
+    
+  2. Security
+    - RLS enabled on all tables
+    - Policies for proper access control
 */
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Hospitals table (simplified)
-CREATE TABLE IF NOT EXISTS hospitals (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  address text NOT NULL,
-  contact_number text NOT NULL,
-  email text NOT NULL UNIQUE,
-  verified boolean DEFAULT false,
-  created_at timestamptz DEFAULT now()
-);
-
--- NGOs table (simplified)
-CREATE TABLE IF NOT EXISTS ngos (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  address text NOT NULL,
-  contact_number text NOT NULL,
-  email text NOT NULL UNIQUE,
-  total_capacity integer NOT NULL,
-  current_capacity integer NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-
--- Patients table (simplified)
+-- Create patients table
 CREATE TABLE IF NOT EXISTS patients (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  hospital_id uuid REFERENCES hospitals(id),
   first_name text NOT NULL,
   last_name text NOT NULL,
   date_of_birth date NOT NULL,
-  gender text NOT NULL,
   contact_number text,
+  medical_history text,
+  current_diagnosis text,
+  treatment_plan text,
   status text DEFAULT 'pending',
-  created_at timestamptz DEFAULT now()
+  hospital_id uuid NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
 );
 
--- Patient Assignments table (simplified)
-CREATE TABLE IF NOT EXISTS patient_assignments (
+-- Create ngo_assignments table
+CREATE TABLE IF NOT EXISTS ngo_assignments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id uuid REFERENCES patients(id),
-  ngo_id uuid REFERENCES ngos(id),
+  ngo_id uuid NOT NULL,
+  status text DEFAULT 'pending',
   assigned_at timestamptz DEFAULT now(),
-  status text DEFAULT 'pending'
+  notes text
 );
 
--- Capacity Logs table (simplified)
-CREATE TABLE IF NOT EXISTS capacity_logs (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  ngo_id uuid REFERENCES ngos(id),
-  previous_capacity integer NOT NULL,
-  new_capacity integer NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-
--- Enable Row Level Security
-ALTER TABLE hospitals ENABLE ROW LEVEL SECURITY;
-ALTER TABLE ngos ENABLE ROW LEVEL SECURITY;
+-- Enable RLS
 ALTER TABLE patients ENABLE ROW LEVEL SECURITY;
-ALTER TABLE patient_assignments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE capacity_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ngo_assignments ENABLE ROW LEVEL SECURITY;
 
--- Create simplified policies
-CREATE POLICY "Public read access to hospitals"
-  ON hospitals FOR SELECT
+-- Policies for patients table
+CREATE POLICY "Hospitals can insert patients"
+  ON patients FOR INSERT
   TO authenticated
-  USING (true);
+  WITH CHECK (true);
 
-CREATE POLICY "Public read access to NGOs"
-  ON ngos FOR SELECT
+CREATE POLICY "Hospitals can view their own patients"
+  ON patients FOR SELECT
   TO authenticated
-  USING (true);
+  USING (hospital_id = auth.uid());
 
--- Create essential indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_patients_hospital_id ON patients(hospital_id);
-CREATE INDEX IF NOT EXISTS idx_patient_assignments_ngo_id ON patient_assignments(ngo_id);
-CREATE INDEX IF NOT EXISTS idx_patient_assignments_patient_id ON patient_assignments(patient_id);
+CREATE POLICY "NGOs can view all pending patients"
+  ON patients FOR SELECT
+  TO authenticated
+  USING (status = 'pending');
+
+-- Policies for ngo_assignments table
+CREATE POLICY "NGOs can create assignments"
+  ON ngo_assignments FOR INSERT
+  TO authenticated
+  WITH CHECK (ngo_id = auth.uid());
+
+CREATE POLICY "Users can view relevant assignments"
+  ON ngo_assignments FOR SELECT
+  TO authenticated
+  USING (
+    ngo_id = auth.uid() OR 
+    patient_id IN (
+      SELECT id FROM patients 
+      WHERE hospital_id = auth.uid()
+    )
+  );
+
+-- Create indexes
+CREATE INDEX idx_patients_hospital_id ON patients(hospital_id);
+CREATE INDEX idx_patients_status ON patients(status);
+CREATE INDEX idx_ngo_assignments_patient_id ON ngo_assignments(patient_id);
+CREATE INDEX idx_ngo_assignments_ngo_id ON ngo_assignments(ngo_id);

@@ -1,4 +1,3 @@
-// Keep the type definitions
 export type Patient = {
      id: string;
      first_name: string;

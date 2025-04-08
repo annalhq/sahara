@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,112 +8,128 @@ import { Users, Building, Calendar } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DataTable } from "@/components/dashboard/DataTable";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function NGODashboard() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [patients, setPatients] = useState<any>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { session, loading, isAuthenticated } = useAuth("/auth/login");
 
-  // Hardcoded NGO data
-  const ngo = {
-    id: "n001",
-    name: "Helping Hands Foundation",
-    total_patients_housed: 120,
-    current_capacity: 75,
-    upcoming_intakes: 10,
-  };
+  // Fetch pending patients
+  useEffect(() => {
+    if (loading) return; // Don't fetch data while checking authentication
+    if (!isAuthenticated) return; // Don't proceed if not authenticated
 
- const patients = [
-   {
-     id: "p001",
-     name: "Aarav Sharma",
-     age: 52,
-     hospital_id: "H003",
-     current_diagnosis: "Hypertension",
-     address: "15 MG Road, Mumbai, MH",
-   },
-  
- ];
+    const fetchPatients = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("patients")
+          .select(
+            `
+            id,
+            first_name,
+            last_name,
+            date_of_birth,
+            contact_number,
+            medical_history,
+            current_diagnosis,
+            status
+          `
+          )
+          .eq("status", "pending");
 
-  const handleExport = () => {
-    alert("Export functionality would be implemented here");
-  };
+        if (error) throw error;
+        setPatients(data || []);
+      } catch (error) {
+        console.error("Error fetching patients:", error);
+        toast.error("Failed to load patients");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const handleFilter = () => {
-    alert("Filter functionality would be implemented here");
+    fetchPatients();
+  }, [loading, isAuthenticated]);
+
+  const handleAcceptPatient = async (patientId: string) => {
+    try {
+      if (!session) throw new Error("No session found");
+
+      // Create assignment
+      const { error: assignmentError } = await supabase
+        .from("ngo_assignments")
+        .insert({
+          patient_id: patientId,
+          ngo_id: session.user.id,
+          status: "accepted",
+        });
+
+      if (assignmentError) throw assignmentError;
+
+      // Update patient status
+      const { error: updateError } = await supabase
+        .from("patients")
+        .update({ status: "assigned" })
+        .eq("id", patientId);
+
+      if (updateError) throw updateError;
+
+      toast.success("Patient accepted successfully");
+
+      // Remove patient from list
+      setPatients(patients.filter((p: any) => p.id !== patientId));
+    } catch (error) {
+      console.error("Error accepting patient:", error);
+      toast.error("Failed to accept patient");
+    }
   };
 
   const columns = [
-    {
-      key: "name",
-      label: "Name",
-    },
-    {
-      key: "age",
-      label: "Age",
-    },
-    { key: "hospital_id", label: "Hospital" },
+    { key: "first_name", label: "First Name" },
+    { key: "last_name", label: "Last Name" },
+    { key: "date_of_birth", label: "Date of Birth" },
+    { key: "contact_number", label: "Contact" },
     { key: "current_diagnosis", label: "Diagnosis" },
-    { key: "address", label: "Location" },
+    {
+      key: "actions",
+      label: "Actions",
+      render: (row: any) => (
+        <Button size="sm" onClick={() => handleAcceptPatient(row.id)}>
+          Accept Patient
+        </Button>
+      ),
+    },
   ];
 
-  const filteredPatients = patients.filter((patient) =>
-    patient.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPatients = patients.filter((patient: any) =>
+    `${patient.first_name} ${patient.last_name}`
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase())
   );
-
-  const stats = [
-    {
-      label: "Total Patients Housed",
-      value: ngo.total_patients_housed.toString(),
-      icon: Users,
-    },
-    {
-      label: "Current Capacity",
-      value: `${ngo.current_capacity}%`,
-      icon: Building,
-    },
-    {
-      label: "Upcoming Intakes",
-      value: ngo.upcoming_intakes.toString(),
-      icon: Calendar,
-    },
-  ];
 
   return (
     <div className="container py-8">
       <DashboardHeader
         title="NGO Dashboard"
         onSearch={setSearchQuery}
-        onExport={handleExport}
-        onFilter={handleFilter}
+        onExport={() => {}}
+        onFilter={() => {}}
       />
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {stats.map((stat, index) => (
-          <StatsCard
-            key={index}
-            title={stat.label}
-            value={stat.value}
-            icon={<stat.icon className="h-6 w-6 text-primary" />}
-          />
-        ))}
-      </div>
 
       <Card className="mb-8">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold">Available Patients</h2>
-            <Button
-              variant="outline"
-              onClick={() => router.push("/ngo/update-capacity")}
-            >
-              Update Capacity
-            </Button>
           </div>
 
           <DataTable
             columns={columns}
             data={filteredPatients}
-            isLoading={false} // No async loading needed
+            isLoading={isLoading}
           />
         </div>
       </Card>
