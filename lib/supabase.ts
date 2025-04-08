@@ -66,16 +66,16 @@ export type MedicalStaff = {
      created_at: string;
 };
 
-export type Document = {
-     id: string;
-     patient_id: string;
-     hospital_id: string;
-     ngo_id: string;
-     document_type: string;
-     file_path: string;
-     uploaded_by: string;
-     created_at: string;
-};
+// export type Document = {
+//      id: string;
+//      patient_id: string;
+//      hospital_id: string;
+//      ngo_id: string;
+//      document_type: string;
+//      file_path: string;
+//      uploaded_by: string;
+//      created_at: string;
+// };
 
 export type PatientAssignment = {
      id: string;
