@@ -12,17 +12,28 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
+interface Patient {
+  id: string;
+  first_name: string;
+  last_name: string;
+  date_of_birth: string;
+  contact_number: string;
+  medical_history: string;
+  current_diagnosis: string;
+  treatment_plan: string;
+  status: string;
+}
+
 export default function NGODashboard() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [patients, setPatients] = useState<any>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { session, loading, isAuthenticated } = useAuth("/auth/login");
 
-  // Fetch pending patients
   useEffect(() => {
-    if (loading) return; // Don't fetch data while checking authentication
-    if (!isAuthenticated) return; // Don't proceed if not authenticated
+    if (loading) return;
+    if (!isAuthenticated) return;
 
     const fetchPatients = async () => {
       try {
@@ -37,6 +48,7 @@ export default function NGODashboard() {
             contact_number,
             medical_history,
             current_diagnosis,
+            treatment_plan,
             status
           `
           )
@@ -57,71 +69,43 @@ export default function NGODashboard() {
 
   const handleAcceptPatient = async (patientId: string) => {
     try {
-      // Add a more specific check for session.user and session.user.id
-      if (!session || !session.user || !session.user.id) {
-        toast.error(
-          "User session is invalid or incomplete. Please try logging in again."
-        );
-        console.error(
-          "Attempted to accept patient with invalid session:",
-          session
-        );
-        return; // Stop execution if session is invalid
+      if (!session?.user?.id) {
+        toast.error("Please log in to accept patients");
+        return;
       }
 
-      // Now it's safer to access session.user.id
       const ngoUserId = session.user.id;
 
-      // 1. Create assignment
       const { error: assignmentError } = await supabase
         .from("ngo_assignments")
         .insert({
           patient_id: patientId,
-          ngo_id: ngoUserId, // Use the validated user ID
-          status: "accepted", // Or 'assigned' depending on your desired flow
+          ngo_id: ngoUserId,
+          status: "accepted",
         });
 
-      if (assignmentError) {
-        console.error("Error creating assignment:", assignmentError);
-        throw new Error(
-          `Failed to create assignment: ${assignmentError.message}`
-        );
-      }
+      if (assignmentError) throw assignmentError;
 
-      // 2. Update patient status from pending to assigned
       const { data, error: updateError } = await supabase
         .from("patients")
         .update({ status: "assigned" })
         .eq("id", patientId)
-        .eq("status", "pending") // Ensure we're only updating patients with pending status
+        .eq("status", "pending")
         .select();
 
-      if (updateError) {
-        console.error("Error updating patient status:", updateError);
-        throw new Error(
-          `Failed to update patient status: ${updateError.message}`
-        );
-      }
+      if (updateError) throw updateError;
 
-      // Verify the status was updated by checking if any rows were affected
-      if (!data || data.length === 0) {
-        console.error("No patient was updated, may have already been assigned");
-        throw new Error(
-          "Patient could not be updated. It may have already been assigned."
-        );
+      if (!data?.length) {
+        throw new Error("Patient could not be updated");
       }
 
       toast.success("Patient accepted successfully");
-
-      setPatients((currentPatients: any) =>
-        currentPatients.filter((p: any) => p.id !== patientId)
+      setPatients((currentPatients) =>
+        currentPatients.filter((p) => p.id !== patientId)
       );
     } catch (error: any) {
       console.error("Error accepting patient:", error);
-      toast.error(
-        error.message ||
-          "An unexpected error occurred while accepting the patient."
-      );
+      toast.error(error.message || "Failed to accept patient");
     }
   };
 
@@ -134,15 +118,15 @@ export default function NGODashboard() {
     {
       key: "actions",
       label: "Actions",
-      render: (row: any) => (
-        <Button size="sm" onClick={() => handleAcceptPatient(row.id)}>
+      render: (patient: Patient) => (
+        <Button size="sm" onClick={() => handleAcceptPatient(patient.id)}>
           Accept Patient
         </Button>
       ),
     },
   ];
 
-  const filteredPatients = patients.filter((patient: any) =>
+  const filteredPatients = patients.filter((patient) =>
     `${patient.first_name} ${patient.last_name}`
       .toLowerCase()
       .includes(searchQuery.toLowerCase())

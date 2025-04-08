@@ -10,25 +10,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface Column {
+interface Column<T> {
   key: string;
   label: string;
-  render?: (value: any) => React.ReactNode;
+  render?: (row: T) => React.ReactNode;
 }
 
-interface DataTableProps {
-  columns: Column[];
-  data: any[];
+interface DataTableProps<T> {
+  columns: Column<T>[];
+  data: T[];
   isLoading?: boolean;
-  onRowClick?: (row: any) => void;
+  onRowClick?: (row: T) => void;
 }
 
-export function DataTable({
+export function DataTable<T>({
   columns,
   data,
   isLoading,
   onRowClick,
-}: DataTableProps) {
+}: DataTableProps<T>) {
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -59,8 +59,8 @@ export function DataTable({
               {columns.map((column) => (
                 <TableCell key={column.key}>
                   {column.render
-                    ? column.render(row[column.key])
-                    : row[column.key]}
+                    ? column.render(row)
+                    : (row as any)[column.key]}
                 </TableCell>
               ))}
             </TableRow>
