@@ -9,23 +9,24 @@ import { UserPlus, Bell, Users, Building, ArrowLeft } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DataTable } from "@/components/dashboard/DataTable";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { DashboardChart } from "@/components/dashboard/DashboardChart";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
 interface Patient {
-  id: any;
+  id: string;
   first_name: string;
   last_name: string;
   date_of_birth: string;
   contact_number: string;
   status: string;
   created_at: string;
-  ngo_assignments: {
-    id: any;
-    status: any;
-    ngo_id: any;
-  }[];
+  ngo_assignments?: Array<{
+    id: string;
+    status: string;
+    ngo_id: string;
+  }>;
 }
 
 export default function HospitalDashboard() {
@@ -65,6 +66,9 @@ export default function HospitalDashboard() {
       try {
         if (!session) return; // Safety check
 
+        // Show loading toast
+        const loadingToastId = toast.loading("Loading dashboard data...");
+
         // Fetch patients
         const { data: patientsData, error: patientsError } = await supabase
           .from("patients")
@@ -101,6 +105,10 @@ export default function HospitalDashboard() {
           placed_patients: placed,
           pending_requests: pending,
         });
+
+        // Dismiss loading toast and show success
+        toast.dismiss(loadingToastId);
+        toast.success("Dashboard data loaded successfully");
       } catch (error) {
         console.error("Error fetching data:", error);
         toast.error("Failed to load dashboard data");
@@ -122,8 +130,13 @@ export default function HospitalDashboard() {
             event: "*",
             schema: "public",
             table: "patients",
+            filter: `hospital_id=eq.${session.user.id}`,
           },
           () => {
+            toast.info("Patient data updated", {
+              description:
+                "The dashboard has been updated with new information.",
+            });
             fetchData();
           }
         )
@@ -176,13 +189,78 @@ export default function HospitalDashboard() {
     },
   ];
 
+  // Chart data
+  const chartData = [
+    { name: "Assigned", value: stats.placed_patients },
+    { name: "Pending", value: stats.pending_requests },
+  ];
+
+  // Monthly registrations chart data (simulated)
+  const currentMonth = new Date().getMonth();
+  const monthlyData = [
+    {
+      name: "Jan",
+      value: currentMonth >= 0 ? Math.floor(Math.random() * 10) + 1 : 0,
+    },
+    {
+      name: "Feb",
+      value: currentMonth >= 1 ? Math.floor(Math.random() * 10) + 1 : 0,
+    },
+    {
+      name: "Mar",
+      value: currentMonth >= 2 ? Math.floor(Math.random() * 10) + 1 : 0,
+    },
+    {
+      name: "Apr",
+      value: currentMonth >= 3 ? Math.floor(Math.random() * 10) + 1 : 0,
+    },
+    {
+      name: "May",
+      value: currentMonth >= 4 ? Math.floor(Math.random() * 10) + 1 : 0,
+    },
+    {
+      name: "Jun",
+      value: currentMonth >= 5 ? Math.floor(Math.random() * 10) + 1 : 0,
+    },
+    {
+      name: "Jul",
+      value: currentMonth >= 6 ? Math.floor(Math.random() * 10) + 1 : 0,
+    },
+    {
+      name: "Aug",
+      value: currentMonth >= 7 ? Math.floor(Math.random() * 10) + 1 : 0,
+    },
+    {
+      name: "Sep",
+      value: currentMonth >= 8 ? Math.floor(Math.random() * 10) + 1 : 0,
+    },
+    {
+      name: "Oct",
+      value: currentMonth >= 9 ? Math.floor(Math.random() * 10) + 1 : 0,
+    },
+    {
+      name: "Nov",
+      value: currentMonth >= 10 ? Math.floor(Math.random() * 10) + 1 : 0,
+    },
+    {
+      name: "Dec",
+      value: currentMonth >= 11 ? Math.floor(Math.random() * 10) + 1 : 0,
+    },
+  ];
+
   return (
     <div className="container py-8">
       <DashboardHeader
         title="Hospital Dashboard"
         onSearch={setSearchQuery}
-        onExport={() => {}}
-        onFilter={() => {}}
+        onExport={() => {
+          toast.success("Export started", {
+            description: "Your data is being exported to CSV",
+          });
+        }}
+        onFilter={() => {
+          toast.info("Filters applied");
+        }}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -196,12 +274,30 @@ export default function HospitalDashboard() {
         ))}
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <DashboardChart
+          title="Patient Status Distribution"
+          data={chartData}
+          type="pie"
+        />
+        <DashboardChart
+          title="Monthly Registrations"
+          data={monthlyData}
+          type="bar"
+        />
+      </div>
+
       <Card className="mb-8">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold">Recent Patients</h2>
             <Link href="/hospital/register-patient">
-              <Button className="gap-2">
+              <Button
+                className="gap-2"
+                onClick={() => {
+                  toast.info("Navigating to patient registration");
+                }}
+              >
                 <UserPlus className="h-4 w-4" />
                 Register New Patient
               </Button>

@@ -80,3 +80,57 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  /* Custom toast styles for pastel look */
+  .toast {
+    @apply rounded-md border px-4 py-3 shadow-sm transition-all;
+  }
+
+  .toast-success {
+    @apply border-green-200 bg-green-50/80 text-green-800;
+  }
+
+  .toast-error {
+    @apply border-red-200 bg-red-50/80 text-red-800;
+  }
+
+  .toast-info {
+    @apply border-blue-200 bg-blue-50/80 text-blue-800;
+  }
+
+  .toast-warning {
+    @apply border-yellow-200 bg-yellow-50/80 text-yellow-800;
+  }
+
+  .toast-loading {
+    @apply border-gray-200 bg-gray-50/80 text-gray-800;
+  }
+
+  .dark .toast-success {
+    @apply border-green-900/30 bg-green-900/20 text-green-300;
+  }
+
+  .dark .toast-error {
+    @apply border-red-900/30 bg-red-900/20 text-red-300;
+  }
+
+  .dark .toast-info {
+    @apply border-blue-900/30 bg-blue-900/20 text-blue-300;
+  }
+
+  .dark .toast-warning {
+    @apply border-yellow-900/30 bg-yellow-900/20 text-yellow-300;
+  }
+
+  .dark .toast-loading {
+    @apply border-gray-900/30 bg-gray-900/20 text-gray-300;
+  }
+}
+
+/* Mobile responsiveness enhancements */
+@media (max-width: 640px) {
+  .container {
+    @apply px-4;
+  }
+}
