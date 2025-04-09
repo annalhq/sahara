@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,8 @@ export default function NGODashboard() {
     accepted_patients: 0,
     capacity_percentage: 75,
   });
+
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
     if (loading) return;
@@ -103,7 +105,10 @@ export default function NGODashboard() {
         }
 
         toast.dismiss(loadingToastId);
-        toast.success("Dashboard data loaded successfully");
+        if (isInitialLoad.current) {
+          toast.success("Dashboard data loaded successfully");
+          isInitialLoad.current = false;
+        }
       } catch (error) {
         console.error("Error fetching patients:", error);
         toast.error("Failed to load patients");

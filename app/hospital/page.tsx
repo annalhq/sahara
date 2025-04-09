@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -58,6 +58,8 @@ export default function HospitalDashboard() {
     return `${day}-${month}-${year}`;
   };
 
+  const isInitialLoad = useRef(true);
+
   useEffect(() => {
     if (loading) return; // Don't fetch data while checking authentication
     if (!isAuthenticated) return; // Don't proceed if not authenticated
@@ -106,9 +108,11 @@ export default function HospitalDashboard() {
           pending_requests: pending,
         });
 
-        // Dismiss loading toast and show success
         toast.dismiss(loadingToastId);
-        toast.success("Dashboard data loaded successfully");
+        if (isInitialLoad.current) {
+          toast.success("Dashboard data loaded successfully");
+          isInitialLoad.current = false;
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
         toast.error("Failed to load dashboard data");
