@@ -133,10 +133,27 @@
   .container {
     @apply px-4;
   }
+
+  /* Optimize animations for mobile */
+  .blur-3xl {
+    @apply blur-xl;
+  }
+
+  .blur-2xl {
+    @apply blur-lg;
+  }
+
+  /* Force hardware acceleration for smoother animations */
+  .motion-safe\:animate-gpu {
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+  }
 }
 
 @keyframes bounce-horizontal {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateX(0);
   }
   50% {
@@ -146,6 +163,13 @@
 
 .animate-bounce-horizontal {
   animation: bounce-horizontal 1.5s infinite ease-in-out;
+}
+
+/* Mobile optimized bounce */
+@media (max-width: 768px) {
+  .animate-bounce-horizontal {
+    animation: none;
+  }
 }
 
 @keyframes fadeIn {
@@ -161,4 +185,15 @@
 
 .animate-fadeIn {
   animation: fadeIn 1s ease-out forwards;
+}
+
+/* Simplify animations for mobile */
+@media (prefers-reduced-motion), (max-width: 768px) {
+  .animate-fadeIn {
+    animation-duration: 0.5s;
+  }
+
+  * {
+    transition-duration: 0.3s !important;
+  }
 }

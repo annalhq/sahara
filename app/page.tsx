@@ -18,9 +18,32 @@ import {
   ChevronDown,
 } from "lucide-react";
 
+// Custom hook to detect mobile devices
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    // Check on initial load
+    checkIsMobile();
+
+    // Add event listener for window resize
+    window.addEventListener("resize", checkIsMobile);
+
+    // Clean up
+    return () => window.removeEventListener("resize", checkIsMobile);
+  }, []);
+
+  return isMobile;
+}
+
 export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -112,38 +135,65 @@ export default function Home() {
     visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
   };
 
+  // Optimize animations for mobile
+  const getAnimationSettings = (isPrimaryAnimation = false) => {
+    if (isMobile) {
+      return {
+        // Simpler animations for mobile
+        animate: isPrimaryAnimation
+          ? {
+              scale: [1, 1.05, 1],
+              opacity: [0.3, 0.4, 0.3],
+            }
+          : {},
+        transition: {
+          // Reduced animation complexity for mobile
+          repeat: isPrimaryAnimation ? Infinity : 0,
+          duration: isPrimaryAnimation ? 12 : 8,
+          ease: "easeInOut",
+        },
+      };
+    }
+
+    // Full animations for desktop
+    return {
+      animate: isPrimaryAnimation
+        ? {
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }
+        : {
+            scale: [1.2, 1, 1.2],
+            opacity: [0.4, 0.2, 0.4],
+          },
+      transition: {
+        repeat: Infinity,
+        duration: isPrimaryAnimation ? 8 : 10,
+        delay: isPrimaryAnimation ? 0 : 1,
+        ease: "easeInOut",
+      },
+    };
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-background/90">
       <main className="flex-grow">
         {/* Hero Section */}
         <section id="home" className="relative isolate overflow-hidden">
-          {/* Background elements */}
+          {/* Background elements - conditionally rendered or simplified for mobile */}
           <div className="absolute inset-0 -z-10">
             <motion.div
-              className="absolute right-[10%] top-[15%] h-72 w-72 rounded-full bg-primary/10 blur-3xl"
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.3, 0.5, 0.3],
-              }}
-              transition={{
-                repeat: Infinity,
-                duration: 8,
-                ease: "easeInOut",
-              }}
+              className={`absolute right-[10%] top-[15%] h-72 w-72 rounded-full bg-primary/10 ${
+                isMobile ? "blur-xl" : "blur-3xl"
+              }`}
+              {...getAnimationSettings(true)}
             />
-            <motion.div
-              className="absolute left-[5%] bottom-[10%] h-64 w-64 rounded-full bg-violet-500/10 blur-3xl"
-              animate={{
-                scale: [1.2, 1, 1.2],
-                opacity: [0.4, 0.2, 0.4],
-              }}
-              transition={{
-                repeat: Infinity,
-                duration: 10,
-                delay: 1,
-                ease: "easeInOut",
-              }}
-            />
+            {!isMobile && (
+              <motion.div
+                className="absolute left-[5%] bottom-[10%] h-64 w-64 rounded-full bg-violet-500/10 blur-3xl"
+                {...getAnimationSettings()}
+              />
+            )}
           </div>
 
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -266,7 +316,7 @@ export default function Home() {
               <p className="text-foreground/70">
                 Through powerful collaborations between healthcare providers and
                 NGOs, we&apos;re making a measurable difference in
-                patients%apos; lives.
+                patients&apos; lives.
               </p>
             </motion.div>
 
@@ -372,10 +422,15 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Call to Action Section */}
+        {/* Call to Action Section - optimize for mobile */}
         <section id="cta" className="py-24 relative overflow-hidden">
           <div className="absolute inset-0 -z-10">
-            <div className="absolute inset-y-0 right-1/2 -ml-72 w-[36.125rem] rounded-r-3xl bg-gradient-to-r from-primary/10 to-violet-500/10 blur-2xl" />
+            {/* Simplified blur effect for mobile */}
+            <div
+              className={`absolute inset-y-0 right-1/2 -ml-72 w-[36.125rem] rounded-r-3xl bg-gradient-to-r from-primary/10 to-violet-500/10 ${
+                isMobile ? "blur-xl" : "blur-2xl"
+              }`}
+            />
           </div>
 
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -408,13 +463,18 @@ export default function Home() {
                 >
                   <span className="flex items-center gap-2">
                     Get Started
+                    {/* Conditionally apply animations */}
                     <motion.div
-                      animate={{ x: [0, 5, 0] }}
-                      transition={{
-                        repeat: Infinity,
-                        duration: 1.5,
-                        repeatType: "reverse",
-                      }}
+                      animate={!isMobile ? { x: [0, 5, 0] } : {}}
+                      transition={
+                        !isMobile
+                          ? {
+                              repeat: Infinity,
+                              duration: 1.5,
+                              repeatType: "reverse",
+                            }
+                          : {}
+                      }
                     >
                       <ArrowRight className="h-4 w-4" />
                     </motion.div>
@@ -430,6 +490,7 @@ export default function Home() {
                 </Button>
               </motion.div>
 
+              {/* Optimize footer features with mobile in mind */}
               <div className="mt-10 flex flex-wrap justify-center gap-x-4 gap-y-2">
                 {["HIPAA Compliant", "24/7 Support", "Free Onboarding"].map(
                   (feature, index) => (
@@ -439,7 +500,10 @@ export default function Home() {
                       initial={{ opacity: 0, y: 10 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
-                      transition={{ delay: 0.3 + index * 0.1 }}
+                      // Minimize animation delay on mobile
+                      transition={{
+                        delay: isMobile ? 0.1 : 0.3 + index * 0.1,
+                      }}
                     >
                       <CheckCircle className="h-4 w-4 text-primary mr-1" />
                       {feature}
