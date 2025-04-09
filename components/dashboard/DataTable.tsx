@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Table,
   TableBody,
@@ -7,73 +6,87 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface Column<T> {
+interface Column {
   key: string;
   label: string;
-  render?: (row: T) => React.ReactNode;
+  render?: (value: any, row?: any) => React.ReactNode;
 }
 
-interface DataTableProps<T> {
-  columns: Column<T>[];
-  data: T[];
+interface DataTableProps {
+  columns: Column[];
+  data: any[];
   isLoading?: boolean;
-  onRowClick?: (row: T) => void;
 }
 
-export function DataTable<T>({
+export function DataTable({
   columns,
   data,
-  isLoading,
-  onRowClick,
-}: DataTableProps<T>) {
+  isLoading = false,
+}: DataTableProps) {
+  // Render loading state
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full" />
-        ))}
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {columns.map((column) => (
+                <TableHead key={column.key}>{column.label}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {[...Array(5)].map((_, i) => (
+              <TableRow key={i}>
+                {columns.map((column) => (
+                  <TableCell key={column.key}>
+                    <Skeleton className="h-6 w-full" />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     );
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="overflow-x-auto rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
             {columns.map((column) => (
-              <TableHead key={column.key}>{column.label}</TableHead>
+              <TableHead key={column.key} className="whitespace-nowrap">
+                {column.label}
+              </TableHead>
             ))}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((row, i) => (
-            <TableRow
-              key={i}
-              className={onRowClick ? "cursor-pointer" : ""}
-              onClick={() => onRowClick?.(row)}
-            >
-              {columns.map((column) => (
-                <TableCell key={column.key}>
-                  {column.render
-                    ? column.render(row)
-                    : (row as any)[column.key]}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-          {data.length === 0 && (
+          {data.length === 0 ? (
             <TableRow>
               <TableCell
                 colSpan={columns.length}
-                className="text-center h-24 text-muted-foreground"
+                className="h-24 text-center text-muted-foreground"
               >
-                No data available
+                No results found
               </TableCell>
             </TableRow>
+          ) : (
+            data.map((row, i) => (
+              <TableRow key={i}>
+                {columns.map((column) => (
+                  <TableCell key={column.key}>
+                    {column.render
+                      ? column.render(row[column.key], row)
+                      : row[column.key] || "-"}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
           )}
         </TableBody>
       </Table>

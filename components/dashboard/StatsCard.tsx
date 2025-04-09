@@ -1,16 +1,11 @@
-
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface StatsCardProps {
   title: string;
-  value: string | number;
-  icon: React.ReactNode;
+  value: string;
+  icon?: React.ReactNode;
   description?: string;
-  trend?: {
-    value: number;
-    isPositive: boolean;
-  };
   className?: string;
 }
 
@@ -19,32 +14,22 @@ export function StatsCard({
   value,
   icon,
   description,
-  trend,
   className,
 }: StatsCardProps) {
   return (
-    <Card className={cn("p-6", className)}>
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
+    <Card className={cn("p-6 overflow-hidden relative", className)}>
+      <div className="flex justify-between items-start">
+        <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl font-bold">{value}</p>
+          <p className="text-3xl font-bold tracking-tight">{value}</p>
           {description && (
-            <p className="text-xs text-muted-foreground">{description}</p>
-          )}
-          {trend && (
-            <p
-              className={cn(
-                "text-xs font-medium",
-                trend.isPositive ? "text-green-600" : "text-red-600"
-              )}
-            >
-              {trend.isPositive ? "↑" : "↓"} {Math.abs(trend.value)}%
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{description}</p>
           )}
         </div>
-        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-          {icon}
-        </div>
+        {icon}
+      </div>
+      <div className="absolute right-0 bottom-0 opacity-5 transform translate-x-4 translate-y-4">
+        {icon && <div className="w-24 h-24 text-primary">{icon}</div>}
       </div>
     </Card>
   );

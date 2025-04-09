@@ -4,7 +4,15 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Building, Calendar, CheckCircle } from "lucide-react";
+import {
+  Users,
+  Building,
+  Calendar,
+  CheckCircle,
+  BarChart4,
+  PieChart,
+  RefreshCcw,
+} from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DataTable } from "@/components/dashboard/DataTable";
 import { StatsCard } from "@/components/dashboard/StatsCard";
@@ -12,6 +20,8 @@ import { DashboardChart } from "@/components/dashboard/DashboardChart";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { motion } from "framer-motion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Patient {
   id: string;
@@ -37,6 +47,7 @@ export default function NGODashboard() {
     accepted_patients: 0,
     capacity_percentage: 75,
   });
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const isInitialLoad = useRef(true);
 
@@ -182,6 +193,74 @@ export default function NGODashboard() {
     }
   };
 
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      if (session?.user?.id) {
+        const { data, error } = await supabase
+          .from("patients")
+          .select(
+            `
+            id,
+            first_name,
+            last_name,
+            date_of_birth,
+            contact_number,
+            medical_history,
+            current_diagnosis,
+            treatment_plan,
+            status
+          `
+          )
+          .eq("status", "pending");
+
+        if (error) throw error;
+        setPatients(data || []);
+
+        const { data: acceptedData, error: acceptedError } = await supabase
+          .from("ngo_assignments")
+          .select(
+            `
+            patient_id,
+            status,
+            patients (
+              id,
+              first_name,
+              last_name,
+              date_of_birth,
+              contact_number,
+              medical_history,
+              current_diagnosis,
+              treatment_plan,
+              status
+            )
+          `
+          )
+          .eq("ngo_id", session.user.id)
+          .eq("status", "accepted");
+
+        if (acceptedError) throw acceptedError;
+
+        const formattedAccepted =
+          acceptedData?.map((item) => item.patients).flat() || [];
+        setAcceptedPatients(formattedAccepted);
+
+        setStats({
+          available_patients: data?.length || 0,
+          accepted_patients: formattedAccepted.length,
+          capacity_percentage: 75,
+        });
+
+        toast.success("Dashboard refreshed successfully");
+      }
+    } catch (error) {
+      console.error("Error refreshing dashboard:", error);
+      toast.error("Failed to refresh dashboard data");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const columns = [
     { key: "first_name", label: "First Name" },
     { key: "last_name", label: "Last Name" },
@@ -229,16 +308,22 @@ export default function NGODashboard() {
       label: "Available Patients",
       value: stats.available_patients.toString(),
       icon: Users,
+      description: "New patients awaiting acceptance",
+      color: "bg-gradient-to-br from-blue-500 to-blue-600",
     },
     {
       label: "Accepted Patients",
       value: stats.accepted_patients.toString(),
       icon: CheckCircle,
+      description: "Patients under your care",
+      color: "bg-gradient-to-br from-green-500 to-green-600",
     },
     {
       label: "Current Capacity",
       value: `${stats.capacity_percentage}%`,
       icon: Building,
+      description: "Of total facility utilization",
+      color: "bg-gradient-to-br from-purple-500 to-purple-600",
     },
   ];
 
@@ -299,88 +384,174 @@ export default function NGODashboard() {
     },
   ];
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+      },
+    },
+  };
+
   return (
-    <div className="container py-8">
-      <DashboardHeader
-        title="NGO Dashboard"
-        onSearch={setSearchQuery}
-        onExport={() => {
-          toast.success("Export started", {
-            description: "Your data is being exported to CSV",
-          });
-        }}
-        onFilter={() => {
-          toast.info("Filters applied");
-        }}
-      />
+    <div className="container py-8 px-4 sm:px-6 lg:px-8 mx-auto max-w-7xl">
+      <motion.div
+        className="space-y-8"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <motion.div variants={itemVariants}>
+            <h1 className="text-3xl font-bold tracking-tight">NGO Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
+              Manage patients and track capacity
+            </p>
+          </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {statsData.map((stat, index) => (
-          <StatsCard
-            key={index}
-            title={stat.label}
-            value={stat.value}
-            icon={<stat.icon className="h-6 w-6 text-primary" />}
-          />
-        ))}
-      </div>
+          <div className="flex items-center gap-3">
+            <motion.div variants={itemVariants}>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={refreshData}
+                disabled={isRefreshing}
+              >
+                <RefreshCcw
+                  className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+                {isRefreshing ? "Refreshing..." : "Refresh"}
+              </Button>
+            </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <DashboardChart
-          title="Capacity Utilization"
-          data={capacityData}
-          type="pie"
-        />
-        <DashboardChart
-          title="Monthly Patient Acceptance"
-          data={monthlyAcceptanceData}
-          type="bar"
-        />
-      </div>
-
-      <Card className="mb-8">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">Available Patients</h2>
-            <Button
-              className="gap-2"
-              onClick={() => {
-                toast.info("Opening capacity update form");
-                router.push("/ngo/update-capacity");
-              }}
-            >
-              <Building className="h-4 w-4" />
-              Update Capacity
-            </Button>
+            <motion.div variants={itemVariants}>
+              <Button
+                className="gap-2"
+                onClick={() => {
+                  toast.info("Opening capacity update form");
+                  router.push("/ngo/update-capacity");
+                }}
+              >
+                <Building className="h-4 w-4" />
+                Update Capacity
+              </Button>
+            </motion.div>
           </div>
-
-          <DataTable
-            columns={columns}
-            data={filteredPatients}
-            isLoading={isLoading}
-          />
         </div>
-      </Card>
 
-      <Card className="mb-8">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">Accepted Patients</h2>
-          </div>
+        <DashboardHeader
+          title=""
+          onSearch={setSearchQuery}
+          onExport={() => {
+            toast.success("Export started", {
+              description: "Your data is being exported to CSV",
+            });
+          }}
+          onFilter={() => {
+            toast.info("Filters applied");
+          }}
+        />
 
-          {filteredAcceptedPatients.length === 0 && !isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No patients have been accepted yet.
-            </div>
-          ) : (
-            <DataTable
-              columns={acceptedColumns}
-              data={filteredAcceptedPatients}
-              isLoading={isLoading}
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          variants={itemVariants}
+        >
+          {statsData.map((stat, index) => (
+            <StatsCard
+              key={index}
+              title={stat.label}
+              value={stat.value}
+              description={stat.description}
+              icon={
+                <div className={`p-3 rounded-full ${stat.color} shadow-lg`}>
+                  <stat.icon className="h-6 w-6 text-white" />
+                </div>
+              }
+              className="transform transition-all duration-200 hover:scale-105 hover:shadow-xl"
             />
-          )}
-        </div>
-      </Card>
+          ))}
+        </motion.div>
+
+        <motion.div
+          className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"
+          variants={itemVariants}
+        >
+          <DashboardChart
+            title="Capacity Utilization"
+            data={capacityData}
+            type="pie"
+            icon={<PieChart className="h-5 w-5" />}
+            description="Current occupancy status of your facility"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
+          />
+          <DashboardChart
+            title="Monthly Patient Acceptance"
+            data={monthlyAcceptanceData}
+            type="bar"
+            icon={<BarChart4 className="h-5 w-5" />}
+            description="Patients accepted over time"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
+          />
+        </motion.div>
+
+        <motion.div variants={itemVariants}>
+          <Tabs defaultValue="available" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="available">Available Patients</TabsTrigger>
+              <TabsTrigger value="accepted">Accepted Patients</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="available" className="space-y-4">
+              <Card className="overflow-hidden border-0 shadow-lg rounded-xl">
+                <div className="p-6">
+                  {filteredPatients.length === 0 && !isLoading ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No patients available for acceptance at this time.
+                    </div>
+                  ) : (
+                    <DataTable
+                      columns={columns}
+                      data={filteredPatients}
+                      isLoading={isLoading}
+                    />
+                  )}
+                </div>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="accepted" className="space-y-4">
+              <Card className="overflow-hidden border-0 shadow-lg rounded-xl">
+                <div className="p-6">
+                  {filteredAcceptedPatients.length === 0 && !isLoading ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No patients have been accepted yet.
+                    </div>
+                  ) : (
+                    <DataTable
+                      columns={acceptedColumns}
+                      data={filteredAcceptedPatients}
+                      isLoading={isLoading}
+                    />
+                  )}
+                </div>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

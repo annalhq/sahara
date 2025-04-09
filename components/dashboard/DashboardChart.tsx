@@ -1,76 +1,111 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
   BarChart,
   Bar,
+  PieChart as RechartsBasePieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
-  Legend,
+  ResponsiveContainer,
 } from "recharts";
-import { useState } from "react";
-import { Button } from "../ui/button";
-import { ChartPieIcon, BarChartIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-interface ChartProps {
+interface DashboardChartProps {
   title: string;
   data: any[];
-  type?: "pie" | "bar";
+  type: "bar" | "pie";
+  icon?: React.ReactNode;
+  description?: string;
+  className?: string;
 }
 
-const COLORS = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-];
+export function DashboardChart({
+  title,
+  data,
+  type,
+  icon,
+  description,
+  className,
+}: DashboardChartProps) {
+  const COLORS = [
+    "#0088FE",
+    "#00C49F",
+    "#FFBB28",
+    "#FF8042",
+    "#8884D8",
+    "#82CA9D",
+  ];
 
-export function DashboardChart({ title, data, type = "pie" }: ChartProps) {
-  const [chartType, setChartType] = useState<"pie" | "bar">(type);
+  if (!data || data.length === 0) {
+    return (
+      <Card className={cn("p-6", className)}>
+        <div className="flex items-center gap-2 mb-4">
+          <h3 className="text-lg font-medium">{title}</h3>
+          {icon}
+        </div>
+        <div className="h-[300px] flex items-center justify-center">
+          <Skeleton className="w-full h-[250px] rounded-md" />
+        </div>
+      </Card>
+    );
+  }
 
   return (
-    <Card className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-medium">{title}</h3>
-        <div className="flex gap-2">
-          <Button
-            variant={chartType === "pie" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setChartType("pie")}
-            className="h-8 w-8 p-0"
-          >
-            <ChartPieIcon className="h-4 w-4" />
-            <span className="sr-only">Pie Chart</span>
-          </Button>
-          <Button
-            variant={chartType === "bar" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setChartType("bar")}
-            className="h-8 w-8 p-0"
-          >
-            <BarChartIcon className="h-4 w-4" />
-            <span className="sr-only">Bar Chart</span>
-          </Button>
+    <Card className={cn("p-6", className)}>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          {icon}
+          <h3 className="text-lg font-medium">{title}</h3>
         </div>
       </div>
-
-      <div className="h-[300px] w-full">
+      {description && (
+        <p className="text-xs text-muted-foreground mb-6">{description}</p>
+      )}
+      <div className="h-[300px] mt-4">
         <ResponsiveContainer width="100%" height="100%">
-          {chartType === "pie" ? (
-            <PieChart>
+          {type === "bar" ? (
+            <BarChart
+              data={data}
+              margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+            >
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "var(--background)",
+                  borderColor: "var(--border)",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+                }}
+              />
+              <Bar
+                dataKey="value"
+                fill="var(--primary)"
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
+          ) : (
+            <RechartsBasePieChart
+              margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+            >
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "var(--background)",
+                  borderColor: "var(--border)",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+                }}
+              />
               <Pie
                 data={data}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                outerRadius={80}
-                fill="#8884d8"
+                innerRadius={60}
+                outerRadius={100}
+                paddingAngle={5}
                 dataKey="value"
                 nameKey="name"
                 label={({ name, percent }) =>
@@ -84,43 +119,7 @@ export function DashboardChart({ title, data, type = "pie" }: ChartProps) {
                   />
                 ))}
               </Pie>
-              <Tooltip
-                formatter={(value, name) => [`${value}`, name]}
-                contentStyle={{
-                  borderRadius: "6px",
-                  border: "1px solid var(--border)",
-                  backgroundColor: "var(--background)",
-                }}
-              />
-              <Legend />
-            </PieChart>
-          ) : (
-            <BarChart
-              data={data}
-              margin={{
-                top: 5,
-                right: 30,
-                left: 20,
-                bottom: 5,
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip
-                contentStyle={{
-                  borderRadius: "6px",
-                  border: "1px solid var(--border)",
-                  backgroundColor: "var(--background)",
-                }}
-              />
-              <Legend />
-              <Bar
-                dataKey="value"
-                fill="hsl(var(--primary))"
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
+            </RechartsBasePieChart>
           )}
         </ResponsiveContainer>
       </div>
